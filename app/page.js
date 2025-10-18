@@ -1,103 +1,144 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [symptoms, setSymptoms] = useState('');
+  const [output, setOutput] = useState('');
+  const [history, setHistory] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Load history and hospital data
+  useEffect(() => {
+    const hist = JSON.parse(localStorage.getItem('healthHistory')) || [];
+    setHistory(hist);
+
+    fetch('/hospital-data.json')
+      .then(r => r.json())
+      .then(data => setHospitals(data))
+      .catch(err => console.error("Error loading hospital data:", err));
+  }, []);
+
+  async function getHealthAdvice() {
+    if (!symptoms.trim()) { alert("Please enter your symptoms!"); return; }
+    setOutput("⏳ Checking symptoms...");
+
+    try {
+      const response = await fetch('/api/getAdvice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptoms })
+      });
+      const data = await response.json();
+
+      if (data.advice) {
+        const nearbyHospital = hospitals[0]; // pick first hospital
+        const adviceWithHospital = `${data.advice}\n• Nearby Hospital: ${nearbyHospital.name}, ${nearbyHospital.address}, 📞 ${nearbyHospital.phone}`;
+        
+        setOutput(adviceWithHospital);
+
+        const newHistory = [{ symptoms, advice: adviceWithHospital }, ...history];
+        setHistory(newHistory);
+        localStorage.setItem('healthHistory', JSON.stringify(newHistory));
+      } else {
+        setOutput("⚠️ No advice received.");
+      }
+
+    } catch (err) {
+      console.error(err);
+      setOutput("⚠️ Error fetching advice. Check API key or connection.");
+    }
+  }
+
+  const healthTips = [
+    "💧 Drink 8-10 glasses of water daily",
+    "🥗 Eat fresh fruits and vegetables",
+    "🏃‍♂️ Exercise at least 30 minutes daily",
+    "😴 Sleep 7-8 hours every night",
+    "🧼 Wash hands frequently to prevent infections"
+  ];
+
+  return (
+    <div style={{ fontFamily: 'Poppins, sans-serif', backgroundColor:'#f5f7fa', minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+      
+      {/* Header */}
+      <header style={{ backgroundColor: '#009688', color: 'white', padding: '25px 10px', textAlign: 'center', borderRadius:'0 0 20px 20px', boxShadow:'0 4px 10px rgba(0,0,0,0.2)', transition:'all 0.3s' }}>
+        <h1 style={{ margin:0, fontSize:'2rem', transition:'all 0.3s' }}>💚 HealthyIndia</h1>
+        <p style={{ margin:5, fontSize:'1.1rem', transition:'all 0.3s' }}>AI-powered Health Awareness Portal 🇮🇳</p>
+      </header>
+
+      {/* Main Content */}
+      <main style={{ flex:1, padding:'20px', display:'flex', flexDirection:'column', alignItems:'center' }}>
+
+        {/* Symptoms Input */}
+        <section style={{ margin:'20px 0', width:'100%', maxWidth:'500px', textAlign:'center' }}>
+          <h2 style={{ color:'#009688' }}>Enter your symptoms</h2>
+          <input
+            type="text"
+            value={symptoms}
+            onChange={e => setSymptoms(e.target.value)}
+            placeholder="e.g. fever, cough, headache"
+            style={{ padding:'12px', borderRadius:'10px', width:'80%', maxWidth:'400px', border:'1px solid #ccc', fontSize:'1rem', transition:'all 0.2s' }}
+          />
+          <br/>
+          <button
+            onClick={getHealthAdvice}
+            style={{ 
+              marginTop:'15px', padding:'12px 30px', borderRadius:'12px', backgroundColor:'#ff5722', 
+              color:'white', border:'none', cursor:'pointer', fontWeight:'bold', fontSize:'1rem', 
+              boxShadow:'0 3px 6px rgba(0,0,0,0.2)', transition:'all 0.3s'
+            }}
+            onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
+            onMouseLeave={e => e.target.style.transform = 'scale(1)'}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            ✅ Check My Health
+          </button>
+        </section>
+
+        {/* AI Result */}
+        <section style={{ backgroundColor:'white', padding:'20px', margin:'15px 0', borderRadius:'15px', width:'90%', maxWidth:'500px', boxShadow:'0 3px 12px rgba(0,0,0,0.15)', transition:'all 0.3s' }}>
+          <h3 style={{ color:'#009688' }}>🩺 Result:</h3>
+          <ul>
+            {output
+              ? output.split('\n').filter(a => a.trim() !== '').map((a,i) => <li key={i} style={{ margin:'5px 0' }}>{a.replace(/^-/, '•')}</li>)
+              : <li>No advice yet</li>
+            }
+          </ul>
+        </section>
+
+        {/* Recent Queries */}
+        <section style={{ backgroundColor:'#fffde7', padding:'20px', margin:'15px 0', borderRadius:'15px', width:'90%', maxWidth:'500px', boxShadow:'0 2px 10px rgba(0,0,0,0.1)', transition:'all 0.3s' }}>
+          <h2 style={{ color:'#f57c00' }}>📜 Recent Queries</h2>
+          <ul>
+            {history.slice(0, 3).map((item,index)=>(
+              <li key={index} style={{ margin:'10px 0' }}>
+                <strong>Symptoms:</strong> {item.symptoms}
+                <ul>
+                  {item.advice
+                    ? item.advice.split('\n').filter(a => a.trim() !== '').map((a,i)=> <li key={i}>{a.replace(/^-/, '•')}</li>)
+                    : <li>No advice available</li>
+                  }
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Health Tips */}
+        <section style={{ backgroundColor:'#e0f7fa', padding:'20px', margin:'15px 0', borderRadius:'15px', width:'90%', maxWidth:'500px', boxShadow:'0 2px 10px rgba(0,0,0,0.1)', transition:'all 0.3s' }}>
+          <h2 style={{ color:'#00796b' }}>💡 5 Simple Health Tips</h2>
+          <ul>
+            {healthTips.map((tip,i) => <li key={i} style={{ margin:'5px 0' }}>{tip}</li>)}
+          </ul>
+        </section>
+
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer style={{ backgroundColor:'#009688', color:'white', textAlign:'center', padding:'20px 10px', borderRadius:'20px 20px 0 0', boxShadow:'0 -2px 8px rgba(0,0,0,0.2)', transition:'all 0.3s' }}>
+        <p style={{ margin:'5px 0', fontWeight:'bold' }}>© 2025 HealthyIndia | Created by Himanshu Aggarwal 🇮🇳</p>
+        <p style={{ margin:'5px 0', fontSize:'0.9rem' }}>For Health Awareness & Education</p>
       </footer>
+
     </div>
   );
 }
