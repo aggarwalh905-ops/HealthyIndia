@@ -1,28 +1,37 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/genai';
+
+// Initialize the Google Generative AI client using server-side API key
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 export async function POST(req) {
-  const { symptoms } = await req.json();
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
   try {
+    const { symptoms } = await req.json();
+
+    if (!symptoms || symptoms.trim() === "") {
+      return NextResponse.json({ error: "Please provide symptoms" }, { status: 400 });
+    }
+
+    // Generate AI advice
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(`
-User symptoms: ${symptoms}
-
-⚡ Please provide a **simple, short, bullet-point answer** that anyone can understand, even without medical knowledge.
-Include:
-- Possible illness (in simple words)
-- What kind of doctor to see
-- Simple home care / precautions
-- Nearby government hospital suggestions (use simple names)
-Limit to **5-6 bullet points** max. Avoid long paragraphs.
+      User symptoms: ${symptoms}
+      Give answer in bullet points in simple, easy-to-understand language for a non-medical person.
+      Include:
+      - Possible illness
+      - Simple advice
+      - Nearby hospital suggestion (if available in hospital-data.json)
     `);
 
-    return NextResponse.json({ advice: result.response.text() });
+    const advice = result.outputText || "No advice available";
+
+    return NextResponse.json({ advice });
 
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("AI API Error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch AI advice. Check API key or server logs." },
+      { status: 500 }
+    );
   }
 }

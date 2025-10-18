@@ -3,19 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
+    "next": "^15.5.6",
     "react": "^18.2.0",
-"react-dom": "^18.2.0",
-"next": "^15.5.6",
-"@google-ai/generative": "^1.0.0"
-
+    "react-dom": "^18.2.0",
+    "styled-jsx": "^6.1.6",
+    "@google/genai": "^1.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "eslint": "^8.48.0",
+    "eslint-config-next": "^15.5.6"
   }
 }
